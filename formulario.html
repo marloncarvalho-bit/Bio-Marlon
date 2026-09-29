@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agendar consulta · Marlon Carvalho</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#070B14;
+    --surface:#111A2E;
+    --line:rgba(255,255,255,.09);
+    --navy:#3B6FE0;
+    --navy-solid:#2B5BD7;
+    --sand:#E8EDF6;
+    --muted:#8C99B0;
+    --serif:"Fraunces",Georgia,serif;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--ink);color:var(--sand);
+    font-family:var(--sans);font-size:16px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100dvh;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:22px 20px 40px;min-height:100dvh;display:flex;flex-direction:column}
+
+  /* barra de progresso */
+  .top{display:flex;align-items:center;gap:14px;margin-bottom:34px}
+  .back{
+    background:none;border:1px solid var(--line);color:var(--muted);
+    width:34px;height:34px;border-radius:50%;flex:none;
+    display:grid;place-items:center;cursor:pointer;padding:0;
+  }
+  .back[hidden]{display:none}
+  .back svg{width:15px;height:15px}
+  .bar{flex:1;height:3px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--navy);border-radius:99px;transition:width .3s ease}
+  .count{font-size:12.5px;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+
+  /* telas */
+  .steps{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .step{display:none}
+  .step.on{display:block}
+  h2{
+    font-family:var(--serif);font-weight:600;
+    font-size:clamp(25px,7vw,31px);line-height:1.15;
+    letter-spacing:-.015em;margin:0 0 6px;
+  }
+  .hint{color:var(--muted);font-size:14.5px;margin:0 0 26px}
+
+  input{
+    width:100%;padding:16px 18px;font:inherit;color:var(--sand);
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;outline:none;
+  }
+  input:focus{border-color:var(--navy)}
+  input::placeholder{color:#5D6982}
+
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{
+    width:100%;text-align:left;font:inherit;color:var(--sand);cursor:pointer;
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:16px 18px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    transition:border-color .15s ease,background .15s ease;
+  }
+  .opt:hover{border-color:rgba(59,111,224,.45)}
+  .opt[aria-pressed="true"]{border-color:var(--navy);background:rgba(59,111,224,.12)}
+  .opt:focus-visible,.next:focus-visible,.back:focus-visible{outline:2px solid var(--navy);outline-offset:3px}
+
+  .next{
+    width:100%;margin-top:22px;padding:16px;font:inherit;font-weight:600;
+    background:var(--navy-solid);color:#F3F7FF;
+    border:none;border-radius:99px;cursor:pointer;
+  }
+  .next:disabled{opacity:.4;cursor:not-allowed}
+  .erro{color:#FF9A8B;font-size:13.5px;margin:10px 0 0;min-height:18px}
+
+  /* final */
+  .fim{text-align:center}
+  .check{
+    width:58px;height:58px;margin:0 auto 20px;border-radius:50%;
+    background:rgba(59,111,224,.14);border:1px solid rgba(59,111,224,.4);
+    display:grid;place-items:center;
+  }
+  .check svg{width:26px;height:26px;color:var(--navy)}
+  .zap{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    width:100%;margin-top:26px;padding:17px;
+    background:#1FA855;color:#fff;text-decoration:none;
+    font-weight:600;border-radius:99px;
+  }
+  .zap svg{width:19px;height:19px}
+  .aviso{font-size:12.5px;color:#5D6982;margin-top:16px}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="top">
+    <button class="back" id="back" hidden aria-label="Voltar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </button>
+    <div class="bar"><i id="fill"></i></div>
+    <span class="count" id="count">1/6</span>
+  </div>
+
+  <div class="steps" id="steps">
+
+    <section class="step on" data-campo="nome" data-tipo="texto">
+      <h2>Como você se chama?</h2>
+      <p class="hint">Seu primeiro nome já está ótimo.</p>
+      <input type="text" id="i-nome" placeholder="Seu nome" autocomplete="given-name" enterkeyhint="next">
+      <p class="erro" data-erro></p>
+      <button class="next">Continuar</button>
+    </section>
+
+    <section class="step" data-campo="telefone" data-tipo="texto">
+      <h2>Qual seu WhatsApp?</h2>
+      <p class="hint">Com DDD. É por ele que eu te respondo.</p>
+      <input type="tel" id="i-tel" placeholder="(98) 98148-3924" inputmode="numeric" autocomplete="tel" enterkeyhint="next">
+      <p class="erro" data-erro></p>
+      <button class="next">Continuar</button>
+    </section>
+
+    <section class="step" data-campo="objetivo" data-tipo="escolha">
+      <h2>O que você quer alcançar?</h2>
+      <p class="hint">Escolha o que mais pesa hoje.</p>
+      <div class="opts">
+        <button class="opt">Emagrecer com saúde</button>
+        <button class="opt">Ganhar massa muscular</button>
+        <button class="opt">Melhorar meu rendimento no treino</button>
+        <button class="opt">Resolver intestino e digestão</button>
+        <button class="opt">Outro objetivo</button>
+      </div>
+    </section>
+
+    <section class="step" data-campo="treino" data-tipo="escolha">
+      <h2>Com que frequência você treina?</h2>
+      <p class="hint">Do jeito que está hoje, não o ideal.</p>
+      <div class="opts">
+        <button class="opt">Ainda não treino</button>
+        <button class="opt">1 a 2 vezes por semana</button>
+        <button class="opt">3 a 4 vezes por semana</button>
+        <button class="opt">5 vezes ou mais</button>
+      </div>
+    </section>
+
+    <section class="step" data-campo="historico" data-tipo="escolha">
+      <h2>Já fez acompanhamento com nutricionista?</h2>
+      <p class="hint">Não tem resposta certa aqui.</p>
+      <div class="opts">
+        <button class="opt">Nunca fiz</button>
+        <button class="opt">Já fiz, mas parei</button>
+        <button class="opt">Faço atualmente</button>
+      </div>
+    </section>
+
+    <section class="step" data-campo="prazo" data-tipo="escolha">
+      <h2>Quando você quer começar?</h2>
+      <p class="hint">Última pergunta.</p>
+      <div class="opts">
+        <button class="opt">Quero começar agora</button>
+        <button class="opt">Nas próximas semanas</button>
+        <button class="opt">Só pesquisando por enquanto</button>
+      </div>
+    </section>
+
+    <section class="step fim" id="fim">
+      <div class="check">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 6 6L20 6"/></svg>
+      </div>
+      <h2 id="fim-titulo">Prontinho!</h2>
+      <p class="hint" id="fim-texto">Agora é só me chamar. Suas respostas já vão junto na mensagem.</p>
+      <a class="zap" id="zap" href="#">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.41a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23-1.48 0-2.93-.39-4.19-1.15l-.3-.17-3.12.82.83-3.04-.2-.31a8.18 8.18 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24M8.53 7.33c-.16 0-.43.06-.66.31-.22.25-.87.85-.87 2.07 0 1.22.89 2.4 1 2.57.14.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.16-.48-.27-.25-.14-1.47-.74-1.69-.82-.23-.08-.37-.12-.56.12-.16.25-.64.81-.78.97-.15.17-.29.19-.53.07-.26-.13-1.06-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.12-.24-.01-.39.11-.5.11-.11.27-.29.37-.44.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.11-.56-1.35-.77-1.84-.2-.48-.4-.42-.56-.43-.14 0-.3-.01-.47-.01"/></svg>
+        Continuar no WhatsApp
+      </a>
+      <p class="aviso">Seus dados ficam só comigo, usados para o atendimento.</p>
+    </section>
+
+  </div>
+</main>
+
+<script>
+(function(){
+  // ===== CONFIGURAÇÃO =====
+  var WHATSAPP = "5598981483924";
+  // Quando o NutriExpert (ou uma planilha) estiver pronto para receber,
+  // cole aqui o endereço. Vazio = não envia para lugar nenhum ainda.
+  var ENDPOINT = "";
+  // ========================
+
+  var steps  = [].slice.call(document.querySelectorAll('.step'));
+  var perg   = steps.filter(function(s){ return s.dataset.campo; });
+  var total  = perg.length;
+  var atual  = 0;
+  var dados  = {};
+
+  var fill  = document.getElementById('fill');
+  var count = document.getElementById('count');
+  var back  = document.getElementById('back');
+
+  function mostrar(i){
+    steps.forEach(function(s){ s.classList.remove('on'); });
+    steps[i].classList.add('on');
+    atual = i;
+    var n = Math.min(i + 1, total);
+    fill.style.width = (i >= total ? 100 : (i / total) * 100) + '%';
+    count.textContent = i >= total ? 'fim' : n + '/' + total;
+    back.hidden = (i === 0 || i >= total);
+    var campo = steps[i].querySelector('input');
+    if (campo) setTimeout(function(){ campo.focus(); }, 80);
+  }
+
+  function limpaTel(v){ return v.replace(/\D/g,''); }
+
+  function valida(step){
+    var el = step.querySelector('input');
+    var v  = el.value.trim();
+    var erro = step.querySelector('[data-erro]');
+    if (step.dataset.campo === 'nome'){
+      if (v.length < 2){ erro.textContent = 'Escreve seu nome pra eu saber com quem falo.'; return null; }
+    }
+    if (step.dataset.campo === 'telefone'){
+      var d = limpaTel(v);
+      if (d.length < 10 || d.length > 13){ erro.textContent = 'Confere o número: faltou o DDD ou sobrou dígito.'; return null; }
+      v = d;
+    }
+    erro.textContent = '';
+    return v;
+  }
+
+  function avanca(){
+    if (atual + 1 >= total) finaliza();
+    else mostrar(atual + 1);
+  }
+
+  // campos de texto
+  perg.filter(function(s){ return s.dataset.tipo === 'texto'; }).forEach(function(s){
+    var btn = s.querySelector('.next');
+    var inp = s.querySelector('input');
+    function seguir(){
+      var v = valida(s);
+      if (v === null) return;
+      dados[s.dataset.campo] = v;
+      avanca();
+    }
+    btn.addEventListener('click', seguir);
+    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); seguir(); } });
+    inp.addEventListener('input', function(){ s.querySelector('[data-erro]').textContent = ''; });
+  });
+
+  // botões de escolha
+  perg.filter(function(s){ return s.dataset.tipo === 'escolha'; }).forEach(function(s){
+    s.querySelectorAll('.opt').forEach(function(b){
+      b.addEventListener('click', function(){
+        s.querySelectorAll('.opt').forEach(function(o){ o.setAttribute('aria-pressed','false'); });
+        b.setAttribute('aria-pressed','true');
+        dados[s.dataset.campo] = b.textContent.trim();
+        setTimeout(avanca, 220);
+      });
+    });
+  });
+
+  back.addEventListener('click', function(){ if (atual > 0) mostrar(atual - 1); });
+
+  function finaliza(){
+    // 1) salva o lead (só se houver endereço configurado)
+    if (ENDPOINT){
+      try{
+        fetch(ENDPOINT, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(Object.assign({}, dados, { origem:'link-bio', data:new Date().toISOString() })),
+          keepalive: true
+        }).catch(function(){});
+      }catch(e){}
+    }
+
+    // 2) monta a mensagem do WhatsApp
+    var primeiro = (dados.nome || '').split(' ')[0];
+    var msg = 'Olá Marlon, sou ' + (dados.nome || '') + '.'
+            + '\nObjetivo: ' + (dados.objetivo || '')
+            + '\nTreino: ' + (dados.treino || '')
+            + '\nAcompanhamento: ' + (dados.historico || '')
+            + '\nQuero começar: ' + (dados.prazo || '')
+            + '\n\nVim pelo link da bio e quero agendar uma consulta.';
+
+    document.getElementById('zap').href =
+      'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(msg);
+
+    if (primeiro) document.getElementById('fim-titulo').textContent = 'Prontinho, ' + primeiro + '!';
+    mostrar(steps.length - 1);
+  }
+
+  mostrar(0);
+})();
+</script>
+</body>
+</html>
